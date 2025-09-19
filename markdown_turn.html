@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown转Word转换器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.7.0/docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: #4a6bdf;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .toolbar {
+            background: #f5f7ff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e5ff;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-copy {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-download {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+        
+        .editor-container {
+            display: flex;
+            height: 60vh;
+        }
+        
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+        }
+        
+        .editor-panel {
+            flex: 1;
+            padding: 20px;
+            border-right: 1px solid #e0e5ff;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .preview-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f9fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e5ff;
+        }
+        
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4a6bdf;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            resize: none;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        #preview-content {
+            height: 100%;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            margin-top: auto;
+        }
+        
+        .instructions {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 1200px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions h2 {
+            color: #4a6bdf;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .instructions li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .instructions li:last-child {
+            border-bottom: none;
+        }
+        
+        .instructions code {
+            background: #f5f7ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Markdown转Word转换器</h1>
+            <p class="subtitle">将Markdown文本转换为Word格式，支持复制和下载</p>
+        </header>
+        
+        <div class="toolbar">
+            <div class="info">
+                <i class="fas fa-info-circle"></i>
+                输入Markdown文本，实时预览并转换为Word格式
+            </div>
+            <div class="buttons">
+                <button class="btn-copy" onclick="copyToClipboard()">
+                    <i class="fas fa-copy"></i> 复制为富文本
+                </button>
+                <button class="btn-download" onclick="downloadDocx()">
+                    <i class="fas fa-download"></i> 下载Word文档
+                </button>
+                <button class="btn-clear" onclick="clearEditor()">
+                    <i class="fas fa-trash"></i> 清空内容
+                </button>
+            </div>
+        </div>
+        
+        <div class="editor-container">
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Markdown输入</div>
+                    <div class="word-count">字数: <span id="word-count">0</span></div>
+                </div>
+                <textarea id="markdown-input" placeholder="请输入Markdown文本..." oninput="updatePreview()"></textarea>
+            </div>
+            
+            <div class="preview-panel">
+                <div class="panel-header">
+                    <div class="panel-title">实时预览</div>
+                    <div class="preview-actions">
+                        <i class="fas fa-sync-alt" onclick="updatePreview()" title="刷新预览"></i>
+                    </div>
+                </div>
+                <div id="preview-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>使用说明</h2>
+        <ul>
+            <li><i class="fas fa-arrow-right"></i> 在左侧输入Markdown文本，右侧将实时显示预览效果</li>
+            <li><i class="fas fa-arrow-right"></i> 点击<strong>复制为富文本</strong>将转换结果复制到剪贴板，可直接粘贴到Word中</li>
+            <li><i class="fas fa-arrow-right"></i> 点击<strong>下载Word文档</strong>将生成并下载.docx格式的Word文档</li>
+            <li><i class="fas fa-arrow-right"></i> 支持所有标准Markdown语法：标题、列表、代码块、表格等</li>
+            <li><i class="fas fa-arrow-right"></i> 示例：<code># 标题</code>, <code>- 列表项</code>, <code>**粗体**</code>, <code>[链接](http://example.com)</code></li>
+        </ul>
+    </div>
+    
+    <div id="notification" class="notification">
+        操作成功！
+    </div>
+    
+    <footer>
+        <p>© 2023 Markdown转Word转换器 | 设计精美，转换高效</p>
+    </footer>
+
+    <script>
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置示例Markdown内容
+            const exampleMarkdown = `# Markdown示例文档
+
+## 这是一个二级标题
+
+这是一个段落文本，展示Markdown到Word的转换功能。**这是粗体文本**，*这是斜体文本*。
+
+### 功能特性
+
+- 支持标题转换
+- 支持列表转换
+- 支持粗体和斜体
+- 支持代码块高亮
+- 支持表格转换
+
+### 代码示例
+
+\`\`\`javascript
+function helloWorld() {
+    console.log('Hello, World!');
+    return true;
+}
+\`\`\`
+
+### 表格示例
+
+| 姓名   | 年龄 | 职业       |
+|--------|------|------------|
+| 张三   | 28   | 工程师     |
+| 李四   | 32   | 设计师     |
+| 王五   | 45   | 产品经理   |
+
+> 提示：这是一个引用块，展示Markdown的引用功能。
+
+由 [Markdown转Word转换器](https://example.com) 生成。`;
+            
+            document.getElementById('markdown-input').value = exampleMarkdown;
+            updatePreview();
+        });
+        
+        // 更新预览
+        function updatePreview() {
+            const markdownText = document.getElementById('markdown-input').value;
+            const previewElement = document.getElementById('preview-content');
+            previewElement.innerHTML = marked.parse(markdownText);
+            
+            // 更新字数统计
+            const wordCount = markdownText.length;
+            document.getElementById('word-count').textContent = wordCount.toLocaleString();
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard() {
+            const markdownText = document.getElementById('markdown-input').value;
+            const htmlContent = marked.parse(markdownText);
+            
+            // 创建一个临时div来获取HTML内容
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // 创建一个范围并选择HTML内容
+            const range = document.createRange();
+            range.selectNode(tempDiv);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            // 执行复制命令
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showNotification('富文本内容已复制到剪贴板！');
+                } else {
+                    showNotification('复制失败，请手动选择并复制预览内容。', 'error');
+                }
+            } catch (err) {
+                showNotification('复制操作不支持: ' + err, 'error');
+            }
+            
+            // 清除选择
+            window.getSelection().removeAllRanges();
+        }
+        
+        // 下载Word文档
+        function downloadDocx() {
+            const markdownText = document.getElementById('markdown-input').value;
+            const htmlContent = marked.parse(markdownText);
+            
+            // 创建一个临时div来处理HTML内容
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // 创建一个Blob对象并生成下载链接
+            const blob = new Blob([tempDiv.innerText], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+            const url = URL.createObjectURL(blob);
+            
+            // 创建下载链接并触发点击
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-converted.docx';
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(function() {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            showNotification('Word文档已开始下载！');
+        }
+        
+        // 清空编辑器
+        function clearEditor() {
+            if (confirm('确定要清空所有内容吗？')) {
+                document.getElementById('markdown-input').value = '';
+                updatePreview();
+                showNotification('内容已清空');
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.background = type === 'success' ? '#4caf50' : '#f44336';
+            notification.classList.add('show');
+            
+            setTimeout(function() {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

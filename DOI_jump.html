@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOI一键跳转工具 - 优化版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 550px;
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            background: linear-gradient(90deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .permission-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .permission-badge.active {
+            background: rgba(46, 204, 113, 0.2);
+            color: #27ae60;
+        }
+        
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        header p {
+            opacity: 0.85;
+            font-size: 1.05rem;
+        }
+        
+        .content {
+            padding: 35px;
+        }
+        
+        .input-container {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        input {
+            flex: 1;
+            padding: 18px 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px 0 0 15px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+        }
+        
+        .paste-btn {
+            background-color: #f8f9fa;
+            color: #4a5568;
+            border: 2px solid #e0e0e0;
+            border-left: none;
+            border-radius: 0 15px 15px 0;
+            padding: 0 22px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            min-width: 100px;
+        }
+        
+        .paste-btn:hover {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(90deg, #3498db, #2c80c5);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 18px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(90deg, #2c80c5, #1a6db0);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 18px rgba(52, 152, 219, 0.5);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .examples {
+            margin-top: 30px;
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .examples h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .examples ul {
+            padding-left: 25px;
+            color: #4a5568;
+            line-height: 1.7;
+        }
+        
+        .examples li {
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        
+        .examples li:hover {
+            background-color: #e3f2fd;
+            color: #1a6db0;
+            transform: translateX(5px);
+        }
+        
+        .doi-info {
+            margin-top: 25px;
+            color: #4a5568;
+            font-size: 1rem;
+            line-height: 1.6;
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .doi-info h3 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .doi-info a {
+            color: #1a6db0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .doi-info a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            padding: 12px 15px;
+            background-color: #fdeded;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: rgba(255, 255, 255, 0.85);
+            background-color: rgba(0, 0, 0, 0.15);
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 600px) {
+            .content {
+                padding: 25px 20px;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            header {
+                padding: 20px 15px;
+            }
+            
+            input {
+                padding: 15px 20px;
+            }
+            
+            .paste-btn {
+                min-width: 80px;
+                padding: 0 15px;
+            }
+            
+            .examples, .doi-info {
+                padding: 20px 15px;
+            }
+        }
+        
+        .success {
+            color: #27ae60;
+            background-color: #eafaf1;
+            border: 1px solid #a9dfbf;
+        }
+        
+        .permission-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .permission-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="permission-badge" id="permissionBadge">
+                <i class="fas fa-clipboard"></i>
+                <span>剪贴板权限: 未启用</span>
+            </div>
+            <h1><i class="fas fa-book-open"></i> DOI一键跳转工具</h1>
+            <p>输入DOI编号，快速访问学术资源</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-container">
+                <div class="input-group">
+                    <input type="text" id="doiInput" placeholder="输入DOI编号（例如：10.1000/xyz123）" autofocus>
+                    <button class="paste-btn" id="pasteBtn">
+                        <i class="fas fa-paste"></i> 粘贴
+                    </button>
+                </div>
+                <div class="error-message" id="errorMessage">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText">DOI编号无效，请检查格式</span>
+                </div>
+            </div>
+            
+            <button class="submit-btn" id="submitBtn">
+                <i class="fas fa-external-link-alt"></i> 跳转到DOI资源
+            </button>
+            
+            <div class="permission-notice">
+                <i class="fas fa-info-circle" style="color: #ffc107; font-size: 1.2rem;"></i>
+                <div>
+                    <p><strong>剪贴板权限优化说明：</strong></p>
+                    <p>此工具使用智能权限管理，只需在首次使用时授权一次。启用"记住权限"后，后续使用无需重复授权。</p>
+                    <div class="permission-toggle">
+                        <label class="switch">
+                            <input type="checkbox" id="permissionToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span>记住剪贴板权限</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="examples">
+                <h3><i class="fas fa-lightbulb"></i> DOI示例</h3>
+                <ul>
+                    <li onclick="fillExample('10.1038/nature12373')">10.1038/nature12373 (Nature 期刊文章)</li>
+                    <li onclick="fillExample('10.1016/j.tree.2018.06.007')">10.1016/j.tree.2018.06.007 (生态学趋势)</li>
+                    <li onclick="fillExample('10.1126/science.1251158')">10.1126/science.1251158 (Science 期刊文章)</li>
+                    <li onclick="fillExample('10.1093/bioinformatics/bty560')">10.1093/bioinformatics/bty560 (生物信息学)</li>
+                </ul>
+            </div>
+            
+            <div class="doi-info">
+                <h3><i class="fas fa-info-circle"></i> 关于DOI</h3>
+                <p>DOI (数字对象标识符) 是一种用于永久标识和交换数字环境中知识产品的系统。</p>
+                <p>DOI通常以 <strong>10.xxxx/xxxxx</strong> 的格式呈现，例如: <strong>10.1000/xyz123</strong>。</p>
+                <p>了解更多: <a href="https://www.doi.org/" target="_blank">doi.org 官方网站</a></p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>DOI一键跳转工具 &copy; 2023 | 学术研究助手 | 剪贴板权限优化版</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const doiInput = document.getElementById('doiInput');
+            const pasteBtn = document.getElementById('pasteBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const permissionBadge = document.getElementById('permissionBadge');
+            const permissionToggle = document.getElementById('permissionToggle');
+            
+            // 初始化权限状态
+            let clipboardPermission = localStorage.getItem('clipboardPermission') === 'true';
+            permissionToggle.checked = clipboardPermission;
+            updatePermissionBadge();
+            
+            // 监听权限开关变化
+            permissionToggle.addEventListener('change', function() {
+                clipboardPermission = this.checked;
+                localStorage.setItem('clipboardPermission', clipboardPermission);
+                updatePermissionBadge();
+                
+                if (clipboardPermission) {
+                    // 如果开启权限，尝试获取一次剪贴板内容
+                    tryPaste();
+                }
+            });
+            
+            // 更新权限徽章显示
+            function updatePermissionBadge() {
+                if (clipboardPermission) {
+                    permissionBadge.classList.add('active');
+                    permissionBadge.innerHTML = '<i class="fas fa-clipboard-check"></i> 剪贴板权限: 已启用';
+                } else {
+                    permissionBadge.classList.remove('active');
+                    permissionBadge.innerHTML = '<i class="fas fa-clipboard"></i> 剪贴板权限: 未启用';
+                }
+            }
+            
+            // 粘贴功能（优化版）
+            pasteBtn.addEventListener('click', tryPaste);
+            
+            // 尝试粘贴功能
+            async function tryPaste() {
+                try {
+                    // 如果用户启用了"记住权限"，直接尝试读取剪贴板
+                    if (clipboardPermission) {
+                        const text = await navigator.clipboard.readText();
+                        doiInput.value = text;
+                        doiInput.focus();
+                        validateDOI(text);
+                        return;
+                    }
+                    
+                    // 否则请求一次性权限
+                    const permission = await navigator.permissions.query({ name: 'clipboard-read' });
+                    if (permission.state === 'granted') {
+                        const text = await navigator.clipboard.readText();
+                        doiInput.value = text;
+                        doiInput.focus();
+                        validateDOI(text);
+                    } else {
+                        // 如果权限未被授予，使用传统方式
+                        navigator.clipboard.readText().then(text => {
+                            doiInput.value = text;
+                            doiInput.focus();
+                            validateDOI(text);
+                        }).catch(err => {
+                            showError('剪贴板访问被拒绝，请手动粘贴');
+                        });
+                    }
+                } catch (err) {
+                    console.error('粘贴失败:', err);
+                    showError('无法访问剪贴板，请手动粘贴');
+                }
+            }
+            
+            // 跳转功能
+            function redirectToDOI() {
+                let doi = doiInput.value.trim();
+                
+                // 验证DOI
+                if (!validateDOI(doi)) {
+                    return;
+                }
+                
+                // 构造DOI URL并跳转
+                const doiUrl = `https://doi.org/${encodeURIComponent(doi)}`;
+                window.open(doiUrl, '_blank');
+                
+                // 显示成功效果
+                doiInput.classList.add('success');
+                setTimeout(() => {
+                    doiInput.classList.remove('success');
+                }, 2000);
+            }
+            
+            // DOI验证函数
+            function validateDOI(doi) {
+                if (!doi) {
+                    showError('请输入DOI编号');
+                    return false;
+                }
+                
+                // DOI基本验证（以10.开头）
+                if (!doi.toLowerCase().startsWith('10.')) {
+                    showError('DOI应以 "10." 开头');
+                    return false;
+                }
+                
+                // 检查DOI结构
+                const doiParts = doi.split('/');
+                if (doiParts.length < 2 || !doiParts[1]) {
+                    showError('DOI格式不正确，应包含前缀和后缀');
+                    return false;
+                }
+                
+                // 验证通过
+                hideError();
+                return true;
+            }
+            
+            // 提交按钮点击事件
+            submitBtn.addEventListener('click', redirectToDOI);
+            
+            // 输入框回车事件
+            doiInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    redirectToDOI();
+                }
+            });
+            
+            // 输入时实时验证
+            doiInput.addEventListener('input', function() {
+                validateDOI(this.value);
+            });
+            
+            // 显示错误信息
+            function showError(message) {
+                errorText.textContent = message;
+                errorMessage.style.display = 'flex';
+                doiInput.focus();
+            }
+            
+            // 隐藏错误信息
+            function hideError() {
+                errorMessage.style.display = 'none';
+            }
+            
+            // 初始验证
+            validateDOI(doiInput.value);
+        });
+        
+        // 填充示例DOI
+        function fillExample(doi) {
+            const doiInput = document.getElementById('doiInput');
+            doiInput.value = doi;
+            doiInput.focus();
+        }
+    </script>
+</body>
+</html>
