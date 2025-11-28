@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google学术链接清理器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #eaf7ff;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result-url {
+            word-break: break-all;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .actions {
+            margin-top: 15px;
+        }
+        .actions button {
+            width: 48%;
+            margin: 5px 1%;
+        }
+        .actions button:first-child {
+            margin-left: 0;
+        }
+        .actions button:last-child {
+            margin-right: 0;
+            background-color: #2ecc71;
+        }
+        .actions button:last-child:hover {
+            background-color: #27ae60;
+        }
+        .info {
+            background-color: #fff8e1;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        .info h3 {
+            margin-top: 0;
+            color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google学术链接清理器</h1>
+        
+        <div class="info">
+            <h3>使用说明</h3>
+            <p>输入Google学术链接，系统将自动提取真实的目标链接并提供访问选项。</p>
+            <p>例如：输入 <code>https://scholar.google.com/scholar_url?url=目标链接&hl=zh-CN&...</code>，系统将提取目标链接部分。</p>
+        </div>
+        
+        <div class="input-group">
+            <label for="inputUrl">请输入Google学术链接：</label>
+            <input type="url" id="inputUrl" placeholder="https://scholar.google.com/scholar_url?url=...">
+        </div>
+        
+        <button id="processBtn">处理链接</button>
+        
+        <div id="result" class="result">
+            <p><strong>提取的链接：</strong></p>
+            <p class="result-url" id="resultUrl"></p>
+            <div class="actions">
+                <button id="copyBtn">复制链接</button>
+                <button id="openBtn">在新标签页打开</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputUrl = document.getElementById('inputUrl');
+            const processBtn = document.getElementById('processBtn');
+            const resultDiv = document.getElementById('result');
+            const resultUrl = document.getElementById('resultUrl');
+            const copyBtn = document.getElementById('copyBtn');
+            const openBtn = document.getElementById('openBtn');
+            
+            // 处理链接
+            processBtn.addEventListener('click', function() {
+                const url = inputUrl.value.trim();
+                
+                if (!url) {
+                    alert('请输入有效的链接');
+                    return;
+                }
+                
+                try {
+                    const extractedUrl = extractUrl(url);
+                    if (extractedUrl) {
+                        resultUrl.textContent = extractedUrl;
+                        resultDiv.classList.add('show');
+                    } else {
+                        alert('无法从输入的链接中提取目标链接');
+                    }
+                } catch (error) {
+                    alert('处理链接时发生错误: ' + error.message);
+                }
+            });
+            
+            // 复制链接
+            copyBtn.addEventListener('click', function() {
+                const url = resultUrl.textContent;
+                navigator.clipboard.writeText(url).then(function() {
+                    alert('链接已复制到剪贴板');
+                }).catch(function(err) {
+                    console.error('复制失败: ', err);
+                    alert('复制失败，请手动复制');
+                });
+            });
+            
+            // 在新标签页打开
+            openBtn.addEventListener('click', function() {
+                const url = resultUrl.textContent;
+                window.open(url, '_blank');
+            });
+            
+            // 提取真实链接的函数
+            function extractUrl(inputUrl) {
+                // 创建一个URL对象来解析输入的URL
+                const urlObj = new URL(inputUrl);
+                
+                // 检查是否为Google学术链接
+                if (urlObj.hostname === 'scholar.google.com' && 
+                    urlObj.pathname === '/scholar_url') {
+                    
+                    // 获取url参数
+                    const targetUrl = urlObj.searchParams.get('url');
+                    
+                    if (targetUrl) {
+                        return decodeURIComponent(targetUrl); // 解码URL
+                    }
+                }
+                
+                // 如果不是Google学术链接，检查是否已经是目标链接
+                if (urlObj.href.startsWith('http')) {
+                    return urlObj.href;
+                }
+                
+                return null;
+            }
+            
+            // 示例链接处理
+            inputUrl.value = 'https://scholar.google.com/scholar_url?url=https://www.sciencedirect.com/science/article/pii/S0308814625045066&hl=zh-CN&sa=X&d=7807942003298240234&ei=lVsoad-ODf-j6rQPrbnwwA4&scisig=ABGrvjJq3iyvlU2TkzgkB2TZ0Qtx&oi=scholaralrt&hist=VMC1FpQAAAAJ:10591975586643091436:ABGrvjJmzax4iLfr_uk0YeQb6ECz&html=&pos=4&folt=kw';
+        });
+    </script>
+</body>
+</html>
